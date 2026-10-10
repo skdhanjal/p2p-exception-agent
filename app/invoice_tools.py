@@ -2,7 +2,6 @@
 
 from google.adk.tools import ToolContext
 
-from app.erp_tools import lookup_purchase_order
 from app.ids import is_valid
 from app.matching import compare_invoice_to_po
 from app.schemas import validate_invoice
@@ -40,9 +39,9 @@ def record_invoice_extraction(invoice: dict, tool_context: ToolContext) -> dict:
 
 
 def compare_current_invoice_to_po(tool_context: ToolContext) -> dict:
-    """Compare the recorded invoice with its purchase order.
+    """Compare the recorded invoice with the purchase order you loaded.
 
-    Uses the invoice saved by record_invoice_extraction. The
+    Call lookup_purchase_order for the invoice's PO number first. The
     differences are computed in code, not by the model.
 
     Returns:
@@ -57,9 +56,12 @@ def compare_current_invoice_to_po(tool_context: ToolContext) -> dict:
         return {"status": "no_po_number", "message": "The invoice shows no PO number."}
     if not is_valid("po_number", po_number):
         return {"status": "invalid_po_number", "po_number": po_number}
-    po = lookup_purchase_order(po_number)
-    if po["status"] == "not_found":
-        return {"status": "po_not_found", "po_number": po_number}
+    po = tool_context.state.get("last_po")
+    if not po or po["purchase_order"]["po_number"] != po_number:
+        return {
+            "status": "po_not_loaded",
+            "message": "Call lookup_purchase_order for this PO first.",
+        }
     result = compare_invoice_to_po(invoice["line_items"], po["lines"])
     tool_context.state["last_comparison"] = result
     return {"status": "compared", "po_number": po_number, **result}

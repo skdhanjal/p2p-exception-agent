@@ -11,16 +11,13 @@ from google.genai import types
 from google.adk.tools.preload_memory_tool import PreloadMemoryTool
 
 from app import callbacks
-from app.erp_tools import (
-    check_duplicate_invoice,
-    get_invoice_status,
-    lookup_purchase_order,
-    lookup_vendor,
-)
-from app.invoice_tools import (
-    compare_current_invoice_to_po,
-    record_invoice_extraction,
-)
+
+from app.invoice_tools import record_invoice_extraction
+
+from app import callbacks
+from app.invoice_tools import record_invoice_extraction
+from app.mcp_clients import build_toolsets
+
 
 MODEL = "gemini-3.5-flash"
 
@@ -36,8 +33,9 @@ INSTRUCTION = """You are an accounts-payable intake assistant for a finance team
         2. Call record_invoice_extraction with the invoice. If it returns
         status invalid, fix the listed errors using the document and call
         it again. Never invent values: use null and add a note instead.
-        3. Call lookup_vendor with the vendor name, then check_duplicate_invoice
-        with the vendor_id and invoice number, then
+        3. Call lookup_vendor with the vendor name, then
+        check_duplicate_invoice with the vendor_id and invoice number. If
+        the invoice shows a PO number, call lookup_purchase_order, then
         compare_current_invoice_to_po.
         4. Summarize: what matches, what does not, and what a human should
         review. Mention vendor status and payment terms.
@@ -69,11 +67,7 @@ root_agent = Agent(
     tools=[
         PreloadMemoryTool(),
         record_invoice_extraction,
-        compare_current_invoice_to_po,
-        lookup_vendor,
-        check_duplicate_invoice,
-        lookup_purchase_order,
-        get_invoice_status,
+        *build_toolsets(),
     ],
     before_model_callback=callbacks.block_obvious_injection,
     after_model_callback=callbacks.redact_long_numbers,

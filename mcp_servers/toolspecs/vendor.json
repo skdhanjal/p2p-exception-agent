@@ -1,0 +1,24 @@
+{
+  "tools": [
+    {
+      "name": "lookup_vendor",
+      "description": "Find vendors by full or partial name. Returns status 'found' with up to five matching vendors (vendor_id, name, status, bank_account_last4, payment_terms), or status 'not_found'.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "vendor_name": {
+            "type": "string",
+            "description": "Vendor name as written on the invoice; a full or partial name is accepted."
+          }
+        },
+        "required": [
+          "vendor_name"
+        ]
+      },
+      "isReadOnly": true,
+      "isDestructive": false,
+      "isIdempotent": true,
+      "isOpenWorld": false
+    }
+  ]
+}

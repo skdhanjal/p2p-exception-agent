@@ -1,0 +1,69 @@
+{
+  "tools": [
+    {
+      "name": "lookup_purchase_order",
+      "description": "Look up a purchase order, its lines, and goods received so far. Returns status 'found' with the purchase order header and lines (including received_qty), or status 'not_found'.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "po_number": {
+            "type": "string",
+            "description": "Purchase order number, for example 'PO-7781'."
+          }
+        },
+        "required": [
+          "po_number"
+        ]
+      },
+      "isReadOnly": true,
+      "isDestructive": false,
+      "isIdempotent": true,
+      "isOpenWorld": false
+    },
+    {
+      "name": "check_duplicate_invoice",
+      "description": "Check whether a vendor has already submitted a given invoice number. Returns status 'duplicate' with the existing invoice, or 'no_duplicate'.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "vendor_id": {
+            "type": "string",
+            "description": "Vendor identifier, for example 'V-1003'."
+          },
+          "invoice_number": {
+            "type": "string",
+            "description": "Invoice number from the document."
+          }
+        },
+        "required": [
+          "vendor_id",
+          "invoice_number"
+        ]
+      },
+      "isReadOnly": true,
+      "isDestructive": false,
+      "isIdempotent": true,
+      "isOpenWorld": false
+    },
+    {
+      "name": "get_invoice_status",
+      "description": "Look up the processing status of an invoice in the ERP. Returns status 'found' with matching invoice details (status, hold_reason, total_amount), or status 'not_found'.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "invoice_number": {
+            "type": "string",
+            "description": "Invoice number, for example 'INV-1002'."
+          }
+        },
+        "required": [
+          "invoice_number"
+        ]
+      },
+      "isReadOnly": true,
+      "isDestructive": false,
+      "isIdempotent": true,
+      "isOpenWorld": false
+    }
+  ]
+}

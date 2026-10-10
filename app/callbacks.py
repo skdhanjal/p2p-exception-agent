@@ -4,7 +4,7 @@ import json
 import logging
 import re
 from copy import deepcopy
-from typing import Any
+from typing import Any, Optional
 
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models.llm_request import LlmRequest
@@ -89,20 +89,43 @@ def validate_tool_args(
     return None
 
 
+def _structured(tool_response: Any) -> dict:
+    """Best effort: find the result object inside a tool response."""
+    if not isinstance(tool_response, dict):
+        return {}
+    content = tool_response.get("structuredContent")
+    if isinstance(content, dict):
+        inner = content.get("result")
+        if isinstance(inner, dict) and len(content) == 1:
+            return inner
+        return content
+    for item in tool_response.get("content") or []:
+        if isinstance(item, dict) and item.get("type") == "text":
+            try:
+                parsed = json.loads(item.get("text", ""))
+            except ValueError:
+                continue
+            if isinstance(parsed, dict):
+                return parsed
+    return tool_response
+
+
 def audit_tool_result(
     tool: BaseTool,
     args: dict[str, Any],
     tool_context: ToolContext,
     tool_response: Any,
 ) -> dict | None:
-    """Count and log every tool call. Never logs argument values."""
+    """Count and log every tool call; keep the loaded PO in state."""
+    result = _structured(tool_response)
     count = tool_context.state.get("tool_call_count", 0) + 1
     tool_context.state["tool_call_count"] = count
-    status = tool_response.get("status") if isinstance(tool_response, dict) else None
+    if tool.name == "lookup_purchase_order" and (result.get("status") == "found"):
+        tool_context.state["last_po"] = result
     _log(
         event="tool_call",
         tool=tool.name,
-        status=status,
+        status=result.get("status"),
         call_number=count,
         agent=tool_context.agent_name,
     )
