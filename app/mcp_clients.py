@@ -44,6 +44,14 @@ def _id_token_headers(audience: str):
 
     return provider
 
+def resolve_endpoint(server_id: str) -> tuple[str, str]:
+    """Return (mcp_url, audience) for a registry server id."""
+    project, location = _project_id(), config.REGISTRY_LOCATION
+    name = f"projects/{project}/locations/{location}/mcpServers/{server_id}"
+    registry = AgentRegistry(project_id=project, location=location)
+    url = _first_url(registry.get_mcp_server(name))
+    return url, _audience(url)
+
 
 def _registry_toolset(server_id: str) -> McpToolset:
     project, location = _project_id(), config.REGISTRY_LOCATION

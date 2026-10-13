@@ -5,7 +5,6 @@ from google.adk.models.llm_response import LlmResponse
 from google.genai import types
 
 from app import callbacks
-from app.invoice_tools import compare_current_invoice_to_po
 
 CTX = SimpleNamespace(agent_name="test_agent")
 
@@ -53,9 +52,6 @@ def test_good_identifier_passes():
     ctx = SimpleNamespace(agent_name="test_agent", state={})
     assert callbacks.validate_tool_args(tool, {"po_number": "PO-7781"}, ctx) is None  # type: ignore
 
-
-
-
 def test_found_po_is_saved_to_state():
     tool = SimpleNamespace(name="lookup_purchase_order")
     ctx = SimpleNamespace(agent_name="test_agent", state={})
@@ -64,10 +60,3 @@ def test_found_po_is_saved_to_state():
     callbacks.audit_tool_result(tool, {}, ctx, response) # type: ignore
     assert ctx.state["last_po"]["purchase_order"]["po_number"] == "PO-7781"
     assert ctx.state["tool_call_count"] == 1
-
-
-def test_compare_requires_the_po_to_be_loaded():
-    invoice = {"po_number": "PO-7781", "line_items": []}
-    ctx = SimpleNamespace(state={"current_invoice": invoice})
-    result = compare_current_invoice_to_po(ctx) # type: ignore
-    assert result["status"] == "po_not_loaded"

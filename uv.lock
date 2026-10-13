@@ -2727,6 +2727,7 @@ source = { editable = "." }
 dependencies = [
     { name = "a2a-sdk", extra = ["http-server"] },
     { name = "aiohttp" },
+    { name = "fastmcp" },
     { name = "gcsfs" },
     { name = "google-adk", extra = ["a2a", "agent-identity", "bigquery-analytics", "gcp", "mcp", "otel-gcp"] },
     { name = "google-cloud-agentplatform" },
@@ -2762,6 +2763,7 @@ requires-dist = [
     { name = "a2a-sdk", extras = ["http-server"], specifier = ">=1.0,<2" },
     { name = "aiohttp", specifier = ">=3.13.4" },
     { name = "codespell", marker = "extra == 'lint'", specifier = ">=2.2.0,<3.0.0" },
+    { name = "fastmcp", specifier = ">=4.0.11" },
     { name = "gcsfs", specifier = ">=2024.11.0" },
     { name = "google-adk", extras = ["a2a", "agent-identity", "bigquery-analytics", "gcp", "mcp", "otel-gcp"], specifier = ">=2.9.2,<3.0.0" },
     { name = "google-adk", extras = ["eval"], marker = "extra == 'eval'", specifier = ">=2.9.2,<3.0.0" },

@@ -101,3 +101,34 @@ def validate_invoice(
             where = ".".join(str(p) for p in err["loc"]) or "invoice"
             errors.append(f"{where}: {err['msg']}")
         return None, errors
+
+
+class RawLineItem(BaseModel):
+    description: str
+    quantity: float
+    unit_price: float
+    line_total: float
+
+
+class RawInvoice(BaseModel):
+    """What the extraction agent returns. Validated strictly later."""
+
+    invoice_number: str
+    vendor_name: str
+    po_number: str | None = None
+    invoice_date: str
+    currency: str
+    line_items: list[RawLineItem]
+    subtotal: float
+    tax_amount: float = 0.0
+    total_amount: float
+    bank_account_last4: str | None = None
+    extraction_notes: list[str] = Field(default_factory=list)
+
+
+class CaseSummary(BaseModel):
+    """The advisory brief the summary agent writes for the approver."""
+
+    headline: str
+    details: list[str]
+    recommendation: str
