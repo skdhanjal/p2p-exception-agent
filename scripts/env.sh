@@ -15,3 +15,7 @@ export RUNTIME_PRINCIPAL="serviceAccount:service-673103961300@gcp-sa-aiplatform-
 export ERP_URL="https://p2p-erp-mcp-d2mdcgbgwa-el.a.run.app"
 export VENDOR_URL="https://p2p-vendor-mcp-d2mdcgbgwa-el.a.run.app"
 export PAYMENTS_URL="https://p2p-payments-mcp-d2mdcgbgwa-el.a.run.app"
+
+export PAYAGENT_SA="p2p-payments-agent-sa@$PROJECT_ID.iam.gserviceaccount.com"
+export AGENT_REPO="$REGION-docker.pkg.dev/$PROJECT_ID/agents"
+export PAYAGENT_URL="https://p2p-payments-agent-d2mdcgbgwa-el.a.run.app"

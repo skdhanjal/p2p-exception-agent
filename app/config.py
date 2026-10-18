@@ -8,5 +8,9 @@ ERP_SERVER_ID = os.environ.get(
     "ERP_SERVER_ID", "agentregistry-00000000-0000-0000-08a4-38206d6337da"
 )
 VENDOR_SERVER_ID = os.environ.get(
-    "VENDOR_SERVER_ID", "agentregistry-00000000-0000-0000-794a-abadbcb1af74"
+"VENDOR_SERVER_ID", "agentregistry-00000000-0000-0000-794a-abadbcb1af74"
 )
+PAYMENTS_AGENT_URL = os.environ.get("A2A_PAYMENTS_AGENT_URL",
+    "https://p2p-payments-agent-d2mdcgbgwa-el.a.run.app"
+)
+PAYMENTS_DRY_RUN = (os.environ.get("PAYMENTS_DRY_RUN", "true").lower() != "false")

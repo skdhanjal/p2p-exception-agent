@@ -6,7 +6,7 @@ from google.adk.agents.context import Context
 from google.adk.events import RequestInput
 from google.genai import types
 
-from app import mcp_call
+from app import a2a_client, config, mcp_call, payment_request
 from app.matching import compare_invoice_to_po
 from app.risk import assess
 from app.schemas import validate_invoice as strict_validate
@@ -232,8 +232,8 @@ LABELS = {
     "HOLD": "ON_HOLD",
 }
 NEXT_STEP = {
-    "APPROVED_AUTOMATICALLY": "Ready for payment processing.",
-    "APPROVED_BY_HUMAN": "Ready for payment processing.",
+    "APPROVED_AUTOMATICALLY": "Approved.",
+    "APPROVED_BY_HUMAN": "Approved.",
     "ON_HOLD": "Do not pay. Verify with the vendor out of band.",
     "REJECTED_BY_HUMAN": "Do not pay.",
 }
@@ -245,11 +245,14 @@ def finalize(ctx: Context):
     label = LABELS.get(key, "REJECTED_BY_HUMAN")
     invoice = ctx.state.get("invoice") or {}
     case = ctx.state.get("case") or {}
+    payment = ctx.state.get("payment") or {}
     flags = case.get("flags", [])
     text = (
         f"Invoice {invoice.get('invoice_number', '?')}: "
         f"{label.replace('_', ' ').title()}. {NEXT_STEP[label]}"
     )
+    if payment.get("status"):
+        text += f" Payment: {payment['status']}."
     if flags:
         text += f" Flags: {', '.join(flags)}."
     yield Event(message=text)
@@ -257,6 +260,28 @@ def finalize(ctx: Context):
         output={
             "decision": label,
             "flags": flags,
+            "payment": payment,
             "invoice_number": invoice.get("invoice_number"),
         }
     )
+
+
+def prepare_payment(ctx: Context):
+    """Decide whether any payment may be requested for this case."""
+    instruction = payment_request.build_instruction(
+        ctx.state.get("final_decision"),
+        ctx.state.get("invoice") or {},
+        ctx.state.get("case") or {},
+        config.PAYMENTS_DRY_RUN,
+    )
+    if instruction is None:
+        return Event(
+            output={}, route="SKIP", state={"payment": {"status": "not_requested"}}
+        )
+    return Event(output=instruction, route="PAY")
+
+
+async def pay_via_agent(node_input: dict):
+    """Send the instruction to the payments executor over A2A."""
+    result = await a2a_client.send_instruction(node_input)
+    return Event(output=result, state={"payment": result})

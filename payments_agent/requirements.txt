@@ -1,0 +1,5 @@
+# Pin exact versions after your first successful build (pip freeze).
+google-adk[a2a]
+fastmcp
+uvicorn
+google-auth

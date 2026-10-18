@@ -3,7 +3,7 @@
 import os
 import uuid
 
-from common import ids
+from common import ids, ledger
 from common.bq import run_query
 from common.logs import log
 from common.payment_rules import check_payment
@@ -122,6 +122,54 @@ def request_payment(
     )
     log("INFO", "payment_created", request_id=request["request_id"])
     return {"status": "created", "request": request}
+
+
+@mcp.tool(
+    annotations={
+        "title": "Record Invoice Decision",
+        "destructiveHint": True,
+        "idempotentHint": True,
+        "openWorldHint": False,
+    }
+)
+def record_invoice_decision(
+    invoice_number: str,
+    vendor_id: str,
+    total_amount: float,
+    status: str,
+    po_number: str = "",
+    reason: str = "",
+) -> dict:
+    """Record the outcome of invoice processing in the ERP, once.
+
+    If the invoice is already recorded for this vendor, the existing
+    status is returned and nothing changes.
+
+    Args:
+        invoice_number: The invoice number.
+        vendor_id: The vendor id, for example "V-1001".
+        total_amount: The invoice total. Must be greater than zero.
+        status: "approved", "on_hold", or "rejected".
+        po_number: The PO number, or empty.
+        reason: A short reason, up to 200 characters.
+
+    Returns:
+        status "recorded" or "already_recorded", with invoice_status.
+    """
+    try:
+        result = ledger.record_decision(
+            run_query,
+            invoice_number=invoice_number,
+            vendor_id=vendor_id,
+            total_amount=total_amount,
+            status=status,
+            po_number=po_number,
+            reason=reason,
+        )
+    except ValueError as exc:
+        raise ToolError(str(exc)) from exc
+    log("INFO", "invoice_decision", outcome=result["status"])
+    return result
 
 
 if __name__ == "__main__":

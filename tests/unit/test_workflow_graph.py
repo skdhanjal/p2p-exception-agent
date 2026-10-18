@@ -91,12 +91,22 @@ def fake_calls(invoice_found=False, vendor_error=False):
     return fake
 
 
+PAY_CALLS: list[dict] = []
+
+
 def make_workflow(invoice):
+    PAY_CALLS.clear()
     summary = {
         "headline": "Needs review",
         "details": ["stub detail"],
         "recommendation": "Check it.",
     }
+
+    async def pay(node_input: dict):
+        PAY_CALLS.append(node_input)
+        result = {"status": "dry_run"}
+        return Event(output=result, state={"payment": result})
+
     return build_workflow(
         extract=FunctionNode(
             func=lambda node_input: Event(output=invoice), name="extract_invoice"
@@ -105,6 +115,7 @@ def make_workflow(invoice):
             func=lambda node_input: Event(output=summary), name="summarize_case"
         ),
         qa=FunctionNode(func=lambda node_input: "answer", name="qa_agent"),
+        pay=FunctionNode(func=pay, name="pay_via_agent"),
     )
 
 
@@ -235,3 +246,65 @@ def test_a_failed_check_fails_closed_to_a_human(monkeypatch):
     monkeypatch.setattr(mcp_call, "call_tool", fake_calls(vendor_error=True))
     _, _, events = asyncio.run(run(make_workflow(CLEAN), document()))
     assert request_of(events) is not None  # never auto-approved
+
+
+def test_auto_approved_invoice_reaches_the_executor(monkeypatch):
+    monkeypatch.setattr(mcp_call, "call_tool", fake_calls())
+    _, _, events = asyncio.run(run(make_workflow(CLEAN), document()))
+    assert len(PAY_CALLS) == 1
+    sent = PAY_CALLS[0]
+    assert sent["vendor_id"] == "V-1001"
+    assert sent["approval_id"] == "APR-000000"
+    assert sent["dry_run"] is True
+    assert decision_of(events) == "APPROVED_AUTOMATICALLY"
+
+
+def test_human_approval_reaches_the_executor(monkeypatch):
+    monkeypatch.setattr(mcp_call, "call_tool", fake_calls())
+
+    async def scenario():
+        wf = make_workflow(PRICEY)
+        runner, session, events = await run(wf, document())
+        return await run(wf, reply(request_of(events), "approve"), runner, session)
+
+    asyncio.run(scenario())
+    assert len(PAY_CALLS) == 1
+    assert PAY_CALLS[0]["approval_id"] != "APR-000000"
+
+
+def test_holds_and_rejections_never_reach_the_executor(monkeypatch):
+    monkeypatch.setattr(mcp_call, "call_tool", fake_calls(invoice_found=True))
+    asyncio.run(run(make_workflow(CLEAN), document()))
+    assert PAY_CALLS == []
+
+    monkeypatch.setattr(mcp_call, "call_tool", fake_calls())
+
+    async def scenario():
+        wf = make_workflow(PRICEY)
+        runner, session, events = await run(wf, document())
+        return await run(wf, reply(request_of(events), "reject"), runner, session)
+
+    asyncio.run(scenario())
+    assert PAY_CALLS == []
+
+
+def test_an_unknown_vendor_is_approved_but_never_paid(monkeypatch):
+    unknown = {"status": "found", "vendors": []}
+
+    async def fake(server, tool, args):
+        if tool == "lookup_vendor":
+            return unknown
+        return await fake_calls()(server, tool, args)
+
+    monkeypatch.setattr(mcp_call, "call_tool", fake)
+
+    async def scenario():
+        wf = make_workflow(CLEAN)
+        runner, session, events = await run(wf, document())
+        call = request_of(events)
+        assert call is not None  # vendor_not_found needs a human
+        return await run(wf, reply(call, "approve"), runner, session)
+
+    _, _, events = asyncio.run(scenario())
+    assert PAY_CALLS == []
+    assert decision_of(events) == "APPROVED_BY_HUMAN"
