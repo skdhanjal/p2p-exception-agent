@@ -44,3 +44,9 @@ def test_idempotency_key_is_stable_and_valid():
     assert re.fullmatch(r"[A-Za-z0-9\-_]{8,64}", inst["idempotency_key"])
     again = build_instruction("AUTO_APPROVE", INVOICE, CASE, True)
     assert inst["idempotency_key"] == again["idempotency_key"]
+
+def test_malformed_identifiers_never_produce_an_instruction():
+    bad_number = {**INVOICE, "invoice_number": "INV-9; DROP TABLE x"}
+    bad_po = {**INVOICE, "po_number": "PO-7701; --"}
+    assert build_instruction("APPROVED", bad_number, CASE, True) is None
+    assert build_instruction("APPROVED", bad_po, CASE, True) is None

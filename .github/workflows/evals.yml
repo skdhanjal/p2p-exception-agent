@@ -1,0 +1,14 @@
+name: gates
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  deterministic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync
+      - run: uv run pytest tests/unit tests/gates payments_agent/tests -q
+      - run: PYTHONPATH=mcp_servers uv run pytest mcp_servers/tests -q

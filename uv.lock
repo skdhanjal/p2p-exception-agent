@@ -1072,6 +1072,10 @@ wheels = [
 ]
 
 [package.optional-dependencies]
+adk = [
+    { name = "aiohttp" },
+    { name = "google-adk" },
+]
 agent-engines = [
     { name = "aiohttp" },
     { name = "cloudpickle" },
@@ -2754,6 +2758,8 @@ lint = [
 [package.dev-dependencies]
 dev = [
     { name = "fastmcp" },
+    { name = "google-adk", extra = ["eval"] },
+    { name = "google-cloud-aiplatform", extra = ["adk", "evaluation"] },
     { name = "nest-asyncio" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -2786,6 +2792,8 @@ provides-extras = ["eval", "lint"]
 [package.metadata.requires-dev]
 dev = [
     { name = "fastmcp", specifier = ">=4.0.11" },
+    { name = "google-adk", extras = ["eval"], specifier = ">=2.11.0" },
+    { name = "google-cloud-aiplatform", extras = ["adk", "evaluation"], specifier = ">=1.165.1" },
     { name = "nest-asyncio", specifier = ">=1.6.0,<2.0.0" },
     { name = "pytest", specifier = ">=9.0.2,<10.0.0" },
     { name = "pytest-asyncio", specifier = ">=1.0.0,<2.0.0" },

@@ -32,6 +32,8 @@ dev = [
     "nest-asyncio>=1.6.0,<2.0.0",
     "reportlab>=5.0.1",
     "fastmcp>=4.0.11",
+    "google-adk[eval]>=2.11.0",
+    "google-cloud-aiplatform[adk,evaluation]>=1.165.1",
 ]
 
 [project.optional-dependencies]

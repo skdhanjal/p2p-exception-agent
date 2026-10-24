@@ -6,7 +6,7 @@ from google.adk.agents.context import Context
 from google.adk.events import RequestInput
 from google.genai import types
 
-from app import a2a_client, config, mcp_call, payment_request
+from app import a2a_client, config, mcp_call, payment_request, replies
 from app.matching import compare_invoice_to_po
 from app.risk import assess
 from app.schemas import validate_invoice as strict_validate
@@ -201,19 +201,14 @@ REJECT_WORDS = {"reject", "rejected", "no"}
 def interpret_decision(node_input: str, ctx: Context):
     """Read the approver's reply. Unclear replies loop; max 3."""
     reply = str(node_input).strip()
-    words = reply.lower().split()
-    word = words[0].strip(".,:;!") if words else ""
+    verdict = replies.parse_reply(reply)
     attempts = int(ctx.state.get("approval_attempts") or 0) + 1
-    if word in APPROVE_WORDS:
-        verdict = "APPROVED"
-    elif word in REJECT_WORDS:
-        verdict = "REJECTED"
-    elif attempts >= MAX_APPROVAL_ATTEMPTS:
+    if verdict == "UNCLEAR":
+        if attempts < MAX_APPROVAL_ATTEMPTS:
+            return Event(
+                output=reply, route="UNCLEAR", state={"approval_attempts": attempts}
+            )
         verdict = "REJECTED"  # fail closed
-    else:
-        return Event(
-            output=reply, route="UNCLEAR", state={"approval_attempts": attempts}
-        )
     return Event(
         output=reply,
         route=verdict,

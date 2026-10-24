@@ -3,6 +3,8 @@
 import hashlib
 import re
 
+from app import ids
+
 POLICY_APPROVAL = "APR-000000"  # automatic approval by policy
 PAYABLE = {"AUTO_APPROVE": False, "APPROVED": True}  # value: human?
 
@@ -30,12 +32,20 @@ def build_instruction(
     if not vendor_id or vendor.get("vendor_status") != "active":
         return None
     number = invoice["invoice_number"]
+    po_number = invoice.get("po_number") or ""
+    if not ids.is_valid("vendor_id", vendor_id):
+        return None
+    if not ids.is_valid("invoice_number", number):
+        return None
+    if po_number and not ids.is_valid("po_number", po_number):
+        return None
+
     key = re.sub(r"[^A-Za-z0-9\-_]", "-", f"{vendor_id}-{number}")[:64]
     human = PAYABLE[final_decision]
     return {
         "invoice_number": number,
         "vendor_id": vendor_id,
-        "po_number": invoice.get("po_number") or "",
+        "po_number": po_number,
         "amount": invoice["total_amount"],
         "currency": invoice["currency"],
         "approval_id": approval_ref(number, vendor_id, human),
