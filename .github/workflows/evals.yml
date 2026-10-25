@@ -3,11 +3,27 @@ on:
   pull_request:
   push:
     branches: [main]
+permissions:
+  contents: read
+  id-token: write
 jobs:
   deterministic:
     runs-on: ubuntu-latest
+    environment: dev
+    env:
+      PROJECT_ID: ${{ vars.PROJECT_ID }}
+      REGION: ${{ vars.REGION }}
+      ERP_SERVER_ID: ${{ vars.ERP_SERVER_ID }}
+      VENDOR_SERVER_ID: ${{ vars.VENDOR_SERVER_ID }}
+      A2A_PAYMENTS_AGENT_URL: ${{ vars.A2A_PAYMENTS_AGENT_URL }}
     steps:
       - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.CI_SA }}
+      - name: Verify service-account token minting
+        run: gcloud auth print-access-token >/dev/null
       - uses: astral-sh/setup-uv@v5
       - run: uv sync
       - run: uv run pytest tests/unit tests/gates payments_agent/tests -q

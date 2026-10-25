@@ -1,0 +1,94 @@
+name: deploy
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to deploy (use an older ref to roll back)"
+        required: false
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+ 
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      PROJECT_ID: ${{ vars.PROJECT_ID }}
+      REGION: ${{ vars.REGION }}
+      ERP_SERVER_ID: ${{ vars.ERP_SERVER_ID }}
+      VENDOR_SERVER_ID: ${{ vars.VENDOR_SERVER_ID }}
+      A2A_PAYMENTS_AGENT_URL: ${{ vars.A2A_PAYMENTS_AGENT_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: astral-sh/setup-uv@v5
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.CI_SA }}
+      - name: Verify service-account token minting
+        run: gcloud auth print-access-token >/dev/null
+      - run: uv sync --locked
+      - run: uv run pytest tests/unit tests/gates payments_agent/tests -q
+      - run: PYTHONPATH=mcp_servers uv run pytest mcp_servers/tests -q
+ 
+  deploy-dev:
+    needs: gates
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      PROJECT_ID: ${{ vars.PROJECT_ID }}
+      REGION: ${{ vars.REGION }}
+      ERP_SERVER_ID: ${{ vars.ERP_SERVER_ID }}
+      VENDOR_SERVER_ID: ${{ vars.VENDOR_SERVER_ID }}
+      A2A_PAYMENTS_AGENT_URL: ${{ vars.A2A_PAYMENTS_AGENT_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.CI_SA }}
+      - uses: astral-sh/setup-uv@v5
+      - run: uv tool install google-agents-cli
+      - run: uv sync --locked
+      - run: ./scripts/deploy_env.sh dev update-only
+      - name: Smoke test (dev, includes the write path)
+        run: >
+          PYTHONPATH=. uv run python -m scripts.smoke_remote
+          --resource "${{ vars.AGENT_RESOURCE }}" --allow-writes
+ 
+  deploy-prod:
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      PROJECT_ID: ${{ vars.PROJECT_ID }}
+      REGION: ${{ vars.REGION }}
+      ERP_SERVER_ID: ${{ vars.ERP_SERVER_ID }}
+      VENDOR_SERVER_ID: ${{ vars.VENDOR_SERVER_ID }}
+      A2A_PAYMENTS_AGENT_URL: ${{ vars.A2A_PAYMENTS_AGENT_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.CI_SA }}
+      - uses: astral-sh/setup-uv@v5
+      - run: uv tool install google-agents-cli
+      - run: uv sync --locked
+      - run: ./scripts/deploy_env.sh prod update-only
+      - name: Smoke test (prod, read-only)
+        run: >
+          PYTHONPATH=. uv run python -m scripts.smoke_remote
+          --resource "${{ vars.AGENT_RESOURCE }}"
