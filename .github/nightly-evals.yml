@@ -1,0 +1,38 @@
+name: nightly-evals
+on:
+  schedule:
+    - cron: "30 20 * * 1-5"
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  extraction:
+    runs-on: ubuntu-latest
+    environment: evals
+    env:
+      GOOGLE_CLOUD_PROJECT: ${{ vars.PROJECT_ID }}
+      GOOGLE_CLOUD_LOCATION: global
+      GOOGLE_GENAI_USE_VERTEXAI: "TRUE"
+      REGION: ${{ vars.REGION }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.CI_SA }}
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --locked
+      - run: >
+          PYTHONPATH=. uv run python -m evals.extraction_eval
+          --limit 20 --repeats 2
+      - run: PYTHONPATH=. uv run python -m evals.check_extraction
+      - run: >
+          PYTHONPATH=. uv run python -m evals.compare_reports
+          evals/baseline/extraction.json
+          evals/reports/extraction_report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: extraction-report
+          path: evals/reports/extraction_report.json
