@@ -24,26 +24,14 @@ jobs:
       ERP_SERVER_ID: ${{ vars.ERP_SERVER_ID }}
       VENDOR_SERVER_ID: ${{ vars.VENDOR_SERVER_ID }}
       A2A_PAYMENTS_AGENT_URL: ${{ vars.A2A_PAYMENTS_AGENT_URL }}
+      LOCAL_MCP_ERP_URL: http://127.0.0.1:18080/mcp
+      LOCAL_MCP_VENDOR_URL: http://127.0.0.1:18081/mcp
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || github.sha }}
       - uses: astral-sh/setup-uv@v5
-      - uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
-          service_account: ${{ vars.CI_SA }}
       - run: uv sync --locked
-      - name: Verify Python ADC token refresh
-        run: |
-          uv run python - <<'PY'
-          import google.auth
-          from google.auth.transport.requests import Request
-
-          credentials, project = google.auth.default()
-          credentials.refresh(Request())
-          print(f"Python ADC token refresh succeeded (project={project})")
-          PY
       - run: uv run pytest tests/unit tests/gates payments_agent/tests -q
       - run: PYTHONPATH=mcp_servers uv run pytest mcp_servers/tests -q
  
