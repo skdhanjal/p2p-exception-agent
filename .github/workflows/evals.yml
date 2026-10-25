@@ -22,9 +22,17 @@ jobs:
         with:
           workload_identity_provider: ${{ vars.WIF_PROVIDER }}
           service_account: ${{ vars.CI_SA }}
-      - name: Verify service-account token minting
-        run: gcloud auth print-access-token >/dev/null
       - uses: astral-sh/setup-uv@v5
       - run: uv sync
+      - name: Verify Python ADC token refresh
+        run: |
+          uv run python - <<'PY'
+          import google.auth
+          from google.auth.transport.requests import Request
+
+          credentials, project = google.auth.default()
+          credentials.refresh(Request())
+          print(f"Python ADC token refresh succeeded (project={project})")
+          PY
       - run: uv run pytest tests/unit tests/gates payments_agent/tests -q
       - run: PYTHONPATH=mcp_servers uv run pytest mcp_servers/tests -q
