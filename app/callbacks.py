@@ -13,7 +13,7 @@ from google.adk.tools import ToolContext
 from google.adk.tools.base_tool import BaseTool
 from google.genai import types
 
-from app import ids
+from app import config, ids
 
 logger = logging.getLogger("p2p.audit")
 if not logger.handlers:
@@ -32,7 +32,10 @@ LONG_NUMBER = re.compile(r"\b\d{9,18}\b")
 
 
 def _log(**fields: Any) -> None:
+    fields.setdefault("env", config.ENV_NAME)
+    fields.setdefault("version", config.GIT_SHA)
     logger.info(json.dumps(fields, default=str))
+
 
 
 def block_obvious_injection(

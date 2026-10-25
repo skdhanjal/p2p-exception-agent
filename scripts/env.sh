@@ -19,3 +19,11 @@ export PAYMENTS_URL="https://p2p-payments-mcp-d2mdcgbgwa-el.a.run.app"
 export PAYAGENT_SA="p2p-payments-agent-sa@$PROJECT_ID.iam.gserviceaccount.com"
 export AGENT_REPO="$REGION-docker.pkg.dev/$PROJECT_ID/agents"
 export PAYAGENT_URL="https://p2p-payments-agent-d2mdcgbgwa-el.a.run.app"
+
+export ERP_SERVER_ID="agentregistry-00000000-0000-0000-08a4-38206d6337da"
+export VENDOR_SERVER_ID="agentregistry-00000000-0000-0000-794a-abadbcb1af74"
+export A2A_PAYMENTS_AGENT_URL="$PAYAGENT_URL"
+
+export DEV_AGENT_RESOURCE="projects/p2p-agent-ab42/locations/asia-south1/reasoningEngines/7430561153161363456"
+export PROD_AGENT_RESOURCE="projects/p2p-agent-ab42/locations/asia-south1/reasoningEngines/412827033811288064"
+export GITHUB_REPO="skdhanjal/p2p-exception-agent"
