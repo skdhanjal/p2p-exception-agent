@@ -6,7 +6,7 @@ from google.adk.agents.context import Context
 from google.adk.events import RequestInput
 from google.genai import types
 
-from app import a2a_client, config, mcp_call, payment_request, replies
+from app import a2a_client, admission, config, mcp_call, payment_request, replies
 from app.matching import compare_invoice_to_po
 from app.risk import assess
 from app.schemas import validate_invoice as strict_validate
@@ -24,9 +24,15 @@ def _as_dict(value) -> dict:
 def route_request(node_input: types.Content):
     """Invoices carry a document; everything else is a question."""
     parts = node_input.parts or []
-    has_document = any(p.inline_data or p.file_data for p in parts)
-    if not has_document:
+    if not any(p.inline_data or p.file_data for p in parts):
         return Event(output=node_input, route="QUESTION")
+    problems = admission.check_parts(parts)
+    if problems:
+        return Event(
+            output={"errors": problems},
+            route="REFUSE",
+            state={"final_decision": "REFUSED"},
+        )
     return Event(
         output=node_input,
         route="INVOICE",
@@ -37,8 +43,17 @@ def route_request(node_input: types.Content):
             "decision": None,
             "final_decision": None,
             "approval_attempts": 0,
+            "approval_id": None,
+            "payment": None,
         },
     )
+
+
+def refuse_document(node_input: dict):
+    """Failure branch for uploads that fail admission control."""
+    errors = node_input.get("errors", [])
+    yield Event(message="I cannot accept this upload: " + "; ".join(errors) + ".")
+    yield Event(output={"decision": "REFUSED", "errors": errors})
 
 
 def validate_invoice(node_input):

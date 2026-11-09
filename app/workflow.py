@@ -52,6 +52,7 @@ def build_workflow(extract, summarize, qa, pay=None) -> Workflow:
                 {
                     "INVOICE": extract,
                     "QUESTION": qa,
+                    "REFUSE": nodes.refuse_document,
                     DEFAULT_ROUTE: qa,
                 },
             ),
