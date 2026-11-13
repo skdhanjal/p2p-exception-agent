@@ -7,7 +7,7 @@ from typing import Any
 from google.cloud import bigquery
 
 DATASET = os.environ.get("ERP_DATASET", "p2p_erp")
-BQ_LOCATION = os.environ.get("BQ_LOCATION", "asia-south1")
+BQ_LOCATION = os.environ.get("BQ_LOCATION", "us-central1")
 
 
 @lru_cache(maxsize=1)

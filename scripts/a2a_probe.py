@@ -20,7 +20,7 @@ INSTRUCTION = {
     "invoice_number": "INV-1001",
     "vendor_id": "V-1001",
     "po_number": "PO-7650",
-    "amount": 420.0,
+    "amount": 9999,
     "currency": "USD",
     "approval_id": "APR-000000",
     "idempotency_key": "V-1001-INV-1001-probe",

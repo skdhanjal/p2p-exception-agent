@@ -1,8 +1,8 @@
 name: p2p-exception-agent
-acli_version: 1.8.0
+acli_version: 1.13.0
 agent_directory: app
 region: us-east1
-base_template: adk
+base_template: adk_python
 generated_at: '2026-10-05T13:51:45.296338+00:00'
 language: python
 framework: google-adk

@@ -4,9 +4,9 @@ import os
 
 ENV_NAME = os.environ.get("APP_ENV", "local")  # local, dev, or prod
 GIT_SHA = os.environ.get("GIT_SHA", "unknown")
-REGISTRY_LOCATION = os.environ.get("REGISTRY_LOCATION", "asia-south1")
-ERP_SERVER_ID = os.environ.get("ERP_SERVER_ID", "REPLACE_ME")
-VENDOR_SERVER_ID = os.environ.get("VENDOR_SERVER_ID", "REPLACE_ME")
+REGISTRY_LOCATION = os.environ.get("REGISTRY_LOCATION", "us-central1")
+ERP_SERVER_ID = os.environ.get("ERP_SERVER_ID", "agentregistry-00000000-0000-0000-643c-d1a9c4ce4cff")
+VENDOR_SERVER_ID = os.environ.get("VENDOR_SERVER_ID", "agentregistry-00000000-0000-0000-2d3e-7f091be42c0f")
 PAYMENTS_AGENT_URL = os.environ.get("A2A_PAYMENTS_AGENT_URL", "REPLACE_ME")
 # Stay in dry run until you deliberately change it.
 PAYMENTS_DRY_RUN = os.environ.get("PAYMENTS_DRY_RUN", "true").lower() != "false"
