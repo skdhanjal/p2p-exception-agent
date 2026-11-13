@@ -37,7 +37,7 @@ Rules:
 - When the approver states a standing preference, acknowledge it.
 """
 
-MODEL = "gemini-3.5-flash"
+MODEL = "gemini-3.8-flash"
 
 
 def build_extract_agent(**overrides) -> Agent:

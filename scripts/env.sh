@@ -25,7 +25,7 @@ export ERP_SERVER_ID="agentregistry-00000000-0000-0000-643c-d1a9c4ce4cff"
 export VENDOR_SERVER_ID="agentregistry-00000000-0000-0000-2d3e-7f091be42c0f"
 export A2A_PAYMENTS_AGENT_URL="$PAYAGENT_URL"
 
-export DEV_AGENT_RESOURCE="projects/$PROJECT_ID/locations/$REGION/reasoningEngines/7430561153161363456"
-export PROD_AGENT_RESOURCE="projects/$PROJECT_ID/locations/$REGION/reasoningEngines/412827033811288064"
+export DEV_AGENT_RESOURCE="projects/$PROJECT_ID/locations/$REGION/reasoningEngines/2602000039567949824"
+export PROD_AGENT_RESOURCE="projects/$PROJECT_ID/locations/$REGION/reasoningEngines/4002619523680174080"
 export GITHUB_REPO="skdhanjal/p2p-exception-agent"
 
