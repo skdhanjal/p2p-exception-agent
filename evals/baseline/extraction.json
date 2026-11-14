@@ -1,0 +1,20 @@
+{
+  "runs": 6,
+  "unreadable": 0,
+  "strict_valid_rate": 1.0,
+  "po_hallucinations": 0,
+  "field_accuracy": {
+    "invoice_number": 1.0,
+    "invoice_date": 1.0,
+    "currency": 1.0,
+    "bank_account_last4": 1.0,
+    "po_number": 1.0,
+    "vendor_name": 1.0,
+    "subtotal": 1.0,
+    "tax_amount": 1.0,
+    "total_amount": 1.0,
+    "line_items": 1.0
+  },
+  "repeat_stability": 0.0,
+  "id_amount_accuracy": 1.0
+}
