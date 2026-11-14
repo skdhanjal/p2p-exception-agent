@@ -24,8 +24,7 @@ jobs:
       ERP_SERVER_ID: ${{ vars.ERP_SERVER_ID }}
       VENDOR_SERVER_ID: ${{ vars.VENDOR_SERVER_ID }}
       A2A_PAYMENTS_AGENT_URL: ${{ vars.A2A_PAYMENTS_AGENT_URL }}
-      LOCAL_MCP_ERP_URL: http://127.0.0.1:18080/mcp
-      LOCAL_MCP_VENDOR_URL: http://127.0.0.1:18081/mcp
+      
     steps:
       - uses: actions/checkout@v4
         with:
