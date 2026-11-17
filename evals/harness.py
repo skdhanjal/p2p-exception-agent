@@ -100,7 +100,7 @@ def classify(final, paused: bool) -> str:
     ) # type: ignore
 
 
-async def run_case(case, human_reply: str = "approve") -> dict:
+async def run_case(case, human_reply: str = "approve APR-123456") -> dict:
     pay_calls: list = []
     invoice = {**case.invoice, "extraction_notes": [case.footer] if case.footer else []}
     workflow = make_workflow(invoice, pay_calls)

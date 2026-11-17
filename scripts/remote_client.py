@@ -126,7 +126,15 @@ async def main(args) -> None:
             call_id = pause.get("id")
             print(f"\nPAUSED  session={session_id}  call_id={call_id}")
             if args.interactive:
-                message = answer_message(call_id, input("> "))
+                reply_text = input("> ")
+                if reply_text.strip().lower().startswith("approve"):
+                    from scripts import approve
+                    payload = (pause.get("args") or {}).get("payload", {})
+                    apr = approve.record(payload[0] if len(payload) > 0  else payload, "approved", reply_text)
+                    print(f"recorded as {apr}")
+                    reply_text = f"{reply_text} {apr}"
+
+                message = answer_message(call_id, reply_text)
 
 
 if __name__ == "__main__":

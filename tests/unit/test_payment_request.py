@@ -17,14 +17,6 @@ def test_automatic_approval_uses_the_policy_reference():
     assert inst["dry_run"] is True
 
 
-def test_human_approval_gets_a_stable_reference():
-    first = build_instruction("APPROVED", INVOICE, CASE, True)
-    second = build_instruction("APPROVED", INVOICE, CASE, True)
-    assert first["approval_id"] == second["approval_id"]
-    assert re.fullmatch(r"APR-\d{6}", first["approval_id"])
-    assert first["approval_id"] != POLICY_APPROVAL
-
-
 def test_nothing_else_is_ever_paid():
     for key in ("HOLD", "REJECTED", "NEEDS_MANUAL_REVIEW", None):
         assert build_instruction(key, INVOICE, CASE, True) is None
@@ -50,3 +42,12 @@ def test_malformed_identifiers_never_produce_an_instruction():
     bad_po = {**INVOICE, "po_number": "PO-7701; --"}
     assert build_instruction("APPROVED", bad_number, CASE, True) is None
     assert build_instruction("APPROVED", bad_po, CASE, True) is None
+
+def test_human_approval_needs_a_recorded_approval_id():
+    assert build_instruction("APPROVED", INVOICE, CASE, True) is None
+    inst = build_instruction("APPROVED", INVOICE, CASE, True,
+                             approval_id="APR-123456")
+    assert inst["approval_id"] == "APR-123456"
+    reserved = build_instruction("APPROVED", INVOICE, CASE, True,
+                                 approval_id="APR-000000")
+    assert reserved is None

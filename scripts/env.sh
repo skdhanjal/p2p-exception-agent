@@ -29,3 +29,5 @@ export DEV_AGENT_RESOURCE="projects/$PROJECT_ID/locations/$REGION/reasoningEngin
 export PROD_AGENT_RESOURCE="projects/$PROJECT_ID/locations/$REGION/reasoningEngines/4002619523680174080"
 export GITHUB_REPO="skdhanjal/p2p-exception-agent"
 
+export KMS_KEY="projects/p2p-exception-agent-lab/locations/us-central1/keyRings/p2p-keys/cryptoKeys/approvals-key"
+export APPROVALS_URL="https://p2p-approvals-hf65ncko5q-uc.a.run.app"

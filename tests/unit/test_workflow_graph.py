@@ -182,7 +182,7 @@ def test_price_mismatch_pauses_then_human_approves(monkeypatch):
         runner, session, events = await run(wf, document())
         call = request_of(events)
         assert call is not None
-        return await run(wf, reply(call, "approve - vendor agreed"), runner, session)
+        return await run(wf, reply(call, "approve - vendor agreed APR-123456"), runner, session)
 
     _, _, events = asyncio.run(scenario())
     assert decision_of(events) == "APPROVED_BY_HUMAN"
@@ -265,7 +265,7 @@ def test_human_approval_reaches_the_executor(monkeypatch):
     async def scenario():
         wf = make_workflow(PRICEY)
         runner, session, events = await run(wf, document())
-        return await run(wf, reply(request_of(events), "approve"), runner, session)
+        return await run(wf, reply(request_of(events), "approve APR-123456"), runner, session)
 
     asyncio.run(scenario())
     assert len(PAY_CALLS) == 1
@@ -303,7 +303,7 @@ def test_an_unknown_vendor_is_approved_but_never_paid(monkeypatch):
         runner, session, events = await run(wf, document())
         call = request_of(events)
         assert call is not None  # vendor_not_found needs a human
-        return await run(wf, reply(call, "approve"), runner, session)
+        return await run(wf, reply(call, "approve APR-123456"), runner, session)
 
     _, _, events = asyncio.run(scenario())
     assert PAY_CALLS == []

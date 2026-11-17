@@ -23,6 +23,26 @@ HEDGES = {
 }
 
 
+APPROVAL_ID = re.compile(r"\bAPR-\d{6}\b")
+RESERVED = "APR-000000"  # policy approvals cannot come from a human
+
+
+def approval_id_in(reply: str) -> str | None:
+    match = APPROVAL_ID.search(reply.upper())
+    if match and match.group(0) != RESERVED:
+        return match.group(0)
+    return None
+
+
+def parse_with_id(reply: str) -> tuple[str, str | None]:
+    """An approval counts only if it names a recorded approval id."""
+    verdict = parse_reply(reply)
+    approval_id = approval_id_in(reply)
+    if verdict == "APPROVED" and approval_id is None:
+        return "UNCLEAR", None
+    return verdict, approval_id if verdict == "APPROVED" else None
+
+
 def parse_reply(reply: str) -> str:
     """Return APPROVED, REJECTED, or UNCLEAR."""
     tokens = re.findall(r"[a-z']+", reply.lower())
