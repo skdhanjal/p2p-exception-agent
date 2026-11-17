@@ -52,6 +52,7 @@ def build_workflow(extract, summarize, qa, pay=None) -> Workflow:
                 {
                     "INVOICE": extract,
                     "QUESTION": qa,
+                    "REFUSE": nodes.refuse_document,
                     DEFAULT_ROUTE: qa,
                 },
             ),
@@ -72,11 +73,12 @@ def build_workflow(extract, summarize, qa, pay=None) -> Workflow:
                 nodes.score_risk,
                 {
                     "AUTO_APPROVE": nodes.prepare_payment,
-                    "NEEDS_APPROVAL": summarize,
-                    "HOLD": summarize,
-                    DEFAULT_ROUTE: summarize,
+                    "NEEDS_APPROVAL": nodes.minimize_for_summary,
+                    "HOLD": nodes.minimize_for_summary,
+                    DEFAULT_ROUTE: nodes.minimize_for_summary,
                 },
             ),
+            (nodes.minimize_for_summary, summarize),
             (summarize, nodes.gate),
             (
                 nodes.gate,

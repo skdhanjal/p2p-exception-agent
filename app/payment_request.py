@@ -23,10 +23,17 @@ def build_instruction(
     invoice: dict,
     case: dict,
     dry_run: bool,
+    approval_id: str | None = None,
 ) -> dict | None:
     """Return the executor instruction, or None if nothing may be paid."""
     if final_decision not in PAYABLE:
         return None
+    human = PAYABLE[final_decision]
+    if human and (not approval_id or approval_id == POLICY_APPROVAL):
+        return None  # a human approval must name a recorded approval
+
+    reference = approval_id if human else POLICY_APPROVAL
+
     vendor = case.get("checks", {}).get("check_vendor", {})
     vendor_id = vendor.get("vendor_id")
     if not vendor_id or vendor.get("vendor_status") != "active":
@@ -48,7 +55,7 @@ def build_instruction(
         "po_number": po_number,
         "amount": invoice["total_amount"],
         "currency": invoice["currency"],
-        "approval_id": approval_ref(number, vendor_id, human),
+        "approval_id": reference,
         "idempotency_key": key,
         "decision_reason": (
             "approved by a person" if human else "auto-approved by policy"

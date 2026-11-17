@@ -1,3 +1,5 @@
 # Pin exact versions after your first successful build (pip freeze).
 fastmcp
 google-cloud-bigquery
+fastapi
+uvicorn

@@ -6,6 +6,8 @@ from datetime import date
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 
 TOLERANCE = 0.02  # allow two cents of rounding in money checks
+MAX_LINES = 200
+MAX_TEXT = 300
 
 
 class LineItem(BaseModel):
@@ -30,6 +32,13 @@ class LineItem(BaseModel):
                 f"x unit_price ({expected}) for '{self.description}'"
             )
         return self
+
+    @field_validator("description")
+    @classmethod
+    def description_is_short(cls, value: str) -> str:
+        if len(value) > MAX_TEXT:
+            raise ValueError(f"description is over {MAX_TEXT} characters")
+        return value
 
 
 class InvoiceExtraction(BaseModel):
@@ -87,6 +96,13 @@ class InvoiceExtraction(BaseModel):
                 f"subtotal plus tax_amount ({expected})"
             )
         return self
+
+    @field_validator("line_items")
+    @classmethod
+    def not_too_many_lines(cls, value: list) -> list:
+        if len(value) > MAX_LINES:
+            raise ValueError(f"more than {MAX_LINES} line items")
+        return value
 
 
 def validate_invoice(

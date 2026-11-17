@@ -6,7 +6,15 @@ from google.adk.agents.context import Context
 from google.adk.events import RequestInput
 from google.genai import types
 
-from app import a2a_client, config, mcp_call, payment_request, replies
+from app import (
+    a2a_client,
+    admission,
+    config,
+    mcp_call,
+    payment_request,
+    replies,
+    summary_input,
+)
 from app.matching import compare_invoice_to_po
 from app.risk import assess
 from app.schemas import validate_invoice as strict_validate
@@ -24,9 +32,15 @@ def _as_dict(value) -> dict:
 def route_request(node_input: types.Content):
     """Invoices carry a document; everything else is a question."""
     parts = node_input.parts or []
-    has_document = any(p.inline_data or p.file_data for p in parts)
-    if not has_document:
+    if not any(p.inline_data or p.file_data for p in parts):
         return Event(output=node_input, route="QUESTION")
+    problems = admission.check_parts(parts)
+    if problems:
+        return Event(
+            output={"errors": problems},
+            route="REFUSE",
+            state={"final_decision": "REFUSED"},
+        )
     return Event(
         output=node_input,
         route="INVOICE",
@@ -37,8 +51,17 @@ def route_request(node_input: types.Content):
             "decision": None,
             "final_decision": None,
             "approval_attempts": 0,
+            "approval_id": None,
+            "payment": None,
         },
     )
+
+
+def refuse_document(node_input: dict):
+    """Failure branch for uploads that fail admission control."""
+    errors = node_input.get("errors", [])
+    yield Event(message="I cannot accept this upload: " + "; ".join(errors) + ".")
+    yield Event(output={"decision": "REFUSED", "errors": errors})
 
 
 def validate_invoice(node_input):
@@ -173,7 +196,8 @@ def _approval_prompt(summary: dict, case: dict) -> str:
         f"Flags: {flags}",
         f"Recommendation: {summary.get('recommendation', 'n/a')}",
         "",
-        "Reply 'approve' or 'reject', optionally with a reason.",
+        "Record your decision first, then reply "
+        "'approve APR-123456' with the id you received, or 'reject'.",
     ]
     return "\n".join(lines)
 
@@ -183,13 +207,21 @@ def request_approval(ctx: Context):
     case = ctx.state.get("case") or {}
     summary = ctx.state.get("summary") or {}
     invoice = case.get("invoice", {})
-    yield RequestInput(
-        message=_approval_prompt(summary, case),
-        payload={
+    payload = (
+        {
             "invoice_number": invoice.get("invoice_number"),
+            "vendor_id": case.get("checks", {})
+            .get("check_vendor", {})
+            .get("vendor_id"),
             "total_amount": invoice.get("total_amount"),
+            "currency": invoice.get("currency"),
             "flags": case.get("flags", []),
         },
+    )
+
+    yield RequestInput(
+        message=_approval_prompt(summary, case),
+        payload=payload,
         response_schema=str,
     )
 
@@ -201,7 +233,7 @@ REJECT_WORDS = {"reject", "rejected", "no"}
 def interpret_decision(node_input: str, ctx: Context):
     """Read the approver's reply. Unclear replies loop; max 3."""
     reply = str(node_input).strip()
-    verdict = replies.parse_reply(reply)
+    verdict, approval_id = replies.parse_with_id(reply)
     attempts = int(ctx.state.get("approval_attempts") or 0) + 1
     if verdict == "UNCLEAR":
         if attempts < MAX_APPROVAL_ATTEMPTS:
@@ -215,6 +247,7 @@ def interpret_decision(node_input: str, ctx: Context):
         state={
             "final_decision": verdict,
             "approval_comment": reply,
+            "approval_id": approval_id,
             "approval_attempts": attempts,
         },
     )
@@ -268,6 +301,7 @@ def prepare_payment(ctx: Context):
         ctx.state.get("invoice") or {},
         ctx.state.get("case") or {},
         config.PAYMENTS_DRY_RUN,
+        ctx.state.get("approval_id")
     )
     if instruction is None:
         return Event(
@@ -280,3 +314,8 @@ async def pay_via_agent(node_input: dict):
     """Send the instruction to the payments executor over A2A."""
     result = await a2a_client.send_instruction(node_input)
     return Event(output=result, state={"payment": result})
+
+
+def minimize_for_summary(node_input: dict):
+    """The summary model gets facts, never document text."""
+    return Event(output=summary_input.minimize_case(node_input))

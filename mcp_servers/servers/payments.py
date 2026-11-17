@@ -2,11 +2,12 @@
 
 import os
 import uuid
+from datetime import UTC, datetime
 
 from common import ids, ledger
 from common.bq import run_query
 from common.logs import log
-from common.payment_rules import check_payment
+from common.payment_rules import POLICY_APPROVAL, check_approval, check_payment
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
 
@@ -91,6 +92,36 @@ def request_payment(
         log("INFO", "payment_replayed")
         return {"status": "replayed", "request": existing[0]}
 
+    approval_rows = run_query(
+        """
+    SELECT approval_id, invoice_number, vendor_id, amount,
+            decision AS status, decided_at
+    FROM `__DATASET__.approvals` WHERE approval_id = @id
+    """,
+        {"id": approval_id},
+    )
+    used = bool(
+        run_query(
+            """
+        SELECT approval_id FROM `__DATASET__.approval_consumptions`
+        WHERE approval_id = @id
+        """,
+            {"id": approval_id},
+        )
+    )
+    approval_problems = check_approval(
+        approval_rows[0] if approval_rows else None,
+        used,
+        approval_id=approval_id,
+        invoice_number=invoice_number,
+        vendor_id=vendor_id,
+        amount=amount,
+        now=datetime.now(UTC),
+    )
+    if approval_problems:
+        log("WARNING", "approval_rejected", reasons=len(approval_problems))
+        raise ToolError("; ".join(approval_problems))
+
     request = {
         "request_id": "PAY-" + uuid.uuid4().hex[:10],
         "invoice_number": invoice_number,
@@ -120,6 +151,16 @@ def request_payment(
             "approval_id": approval_id,
         },
     )
+    if approval_id != POLICY_APPROVAL:
+        run_query(
+            """
+            INSERT INTO `__DATASET__.approval_consumptions`
+              (approval_id, request_id, consumed_at)
+            VALUES (@id, @request, CURRENT_TIMESTAMP())
+            """,
+            {"id": approval_id, "request": request["request_id"]},
+        )
+
     log("INFO", "payment_created", request_id=request["request_id"])
     return {"status": "created", "request": request}
 

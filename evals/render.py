@@ -10,7 +10,7 @@ def _money(value: float) -> str:
     return f"{value:,.2f}"
 
 
-def render_invoice(inv: dict, path: Path, layout: int, footer: str = ""):
+def render_invoice(inv: dict, path: Path, layout: int, footer: str = "", hidden: str = ""):
     path.parent.mkdir(parents=True, exist_ok=True)
     pdf = canvas.Canvas(str(path), pagesize=A4)
     _, height = A4
@@ -63,6 +63,12 @@ def render_invoice(inv: dict, path: Path, layout: int, footer: str = ""):
     if inv["bank_account_last4"]:
         y -= 14
         pdf.drawString(50, y, f"Pay to account ending {inv['bank_account_last4']}")
+
+    if hidden:
+        pdf.setFillGray(1)  # white on white: invisible to a reader
+        pdf.setFont("Helvetica", 9)
+        pdf.drawString(50, 200, hidden)
+
     if footer:
         pdf.setFont("Helvetica", 7)
         pdf.setFillGray(0.6)
