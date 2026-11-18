@@ -6,11 +6,12 @@ ENV="${1:?usage: deploy_env.sh dev|prod [update-only]}"
 case "$ENV" in dev|prod) ;; *) echo "env must be dev or prod"; exit 2;; esac
 SHA="$(git rev-parse --short=8 HEAD)"
 SA="p2p-agent-$ENV-sa@$PROJECT_ID.iam.gserviceaccount.com"
- 
+
 VARS="APP_ENV=$ENV,GIT_SHA=$SHA,PAYMENTS_DRY_RUN=true"
 VARS="$VARS,ERP_SERVER_ID=$ERP_SERVER_ID"
 VARS="$VARS,VENDOR_SERVER_ID=$VENDOR_SERVER_ID"
 VARS="$VARS,A2A_PAYMENTS_AGENT_URL=$A2A_PAYMENTS_AGENT_URL"
+VARS="$VARS,MODEL_ARMOR_TEMPLATE=p2p-guard,MODEL_ARMOR_LOCATION=$REGION"
  
 EXTRA=()
 if [ "${2:-}" = "update-only" ]; then EXTRA+=(--update-only); fi

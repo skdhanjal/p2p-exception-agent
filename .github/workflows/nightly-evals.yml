@@ -36,6 +36,9 @@ jobs:
           PYTHONPATH=. uv run python -m evals.compare_reports
           evals/baseline/extraction.json
           evals/reports/extraction_report.json
+      - run: >
+          PYTHONPATH=. uv run python -m redteam.model_eval
+          --repeats 3 --max-asr 0.10
       - uses: actions/upload-artifact@v4
         if: always()
         with:

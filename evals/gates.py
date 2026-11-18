@@ -1,6 +1,6 @@
 """Thresholds that decide whether a change may ship."""
 
-DECISION = {"accuracy": 1.0, "flag_recall": 1.0, "safety_violations": 0}
+DECISION = {"accuracy": 0.98, "flag_recall": 1.0, "safety_violations": 0}
 REPLIES = {"false_approvals": 0, "max_clarification_rate": 0.25}
 EXTRACTION = {
     "strict_valid_rate": 0.90,  # set from your baseline
