@@ -3,7 +3,12 @@
 AUTO_APPROVE_LIMIT = 5000.00  # above this, a human must approve
 
 # Flags that stop the process: nothing here may be approved by a click.
-BLOCKING = {"duplicate_invoice", "vendor_inactive", "bank_mismatch"}
+BLOCKING = {
+    "duplicate_invoice",
+    "vendor_inactive",
+    "bank_mismatch",
+    "injection_suspected",
+}
 
 
 def assess(invoice: dict, checks: dict) -> dict:
@@ -11,9 +16,15 @@ def assess(invoice: dict, checks: dict) -> dict:
     vendor = checks.get("check_vendor", {})
     dup = checks.get("check_duplicate", {})
     po = checks.get("check_po", {})
+    content = checks.get("check_content", {})
     flags: list[str] = []
 
-    for label, result in (("vendor", vendor), ("duplicate", dup), ("po", po)):
+    for label, result in (
+        ("vendor", vendor),
+        ("duplicate", dup),
+        ("po", po),
+        ("content", content),
+    ):
         if result.get("status") == "error":
             flags.append(f"{label}_check_failed")
 
@@ -22,6 +33,8 @@ def assess(invoice: dict, checks: dict) -> dict:
         flags.append("duplicate_invoice")
     flags += po.get("flags", [])
     flags += [f["type"] for f in po.get("findings", [])]
+    flags += checks.get("check_content", {}).get("flags", [])
+
     if float(invoice["total_amount"]) > AUTO_APPROVE_LIMIT:
         flags.append("over_auto_approve_limit")
 

@@ -32,6 +32,8 @@ def build_workflow(extract, summarize, qa, pay=None) -> Workflow:
     check_vendor = _check(nodes.check_vendor, "check_vendor")
     check_duplicate = _check(nodes.check_duplicate, "check_duplicate")
     check_po = _check(nodes.check_po, "check_po")
+    check_content = _check(nodes.check_content, "check_content")
+
     join = JoinNode(name="join")
     if pay is None:
         pay = FunctionNode(
@@ -68,6 +70,7 @@ def build_workflow(extract, summarize, qa, pay=None) -> Workflow:
             (nodes.dispatch, check_vendor, join),
             (nodes.dispatch, check_duplicate, join),
             (nodes.dispatch, check_po, join),
+            (nodes.dispatch, check_content, join),
             (join, nodes.score_risk),
             (
                 nodes.score_risk,

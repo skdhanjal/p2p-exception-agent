@@ -1,14 +1,18 @@
 """Function nodes for the invoice workflow. Code decides; LLMs assist."""
 
+import asyncio
+
 from fastmcp.exceptions import ToolError
 from google.adk import Event
 from google.adk.agents.context import Context
 from google.adk.events import RequestInput
+from google.api_core.exceptions import GoogleAPICallError
 from google.genai import types
 
 from app import (
     a2a_client,
     admission,
+    armor,
     config,
     mcp_call,
     payment_request,
@@ -319,3 +323,16 @@ async def pay_via_agent(node_input: dict):
 def minimize_for_summary(node_input: dict):
     """The summary model gets facts, never document text."""
     return Event(output=summary_input.minimize_case(node_input))
+
+async def check_content(node_input: dict):
+    """Screen the document's free text for injection attempts."""
+    if not armor.enabled():
+        return Event(output={"status": "skipped", "flags": []})
+    text = armor.collect_text(node_input)
+    try:
+        flagged = await asyncio.to_thread(armor.prompt_flagged, text)
+    except GoogleAPICallError:
+        return Event(output={"status": "error",
+                             "message": "screening unavailable"})
+    flags = ["injection_suspected"] if flagged else []
+    return Event(output={"status": "ok", "flags": flags})

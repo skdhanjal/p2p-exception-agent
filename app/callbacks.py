@@ -4,16 +4,17 @@ import json
 import logging
 import re
 from copy import deepcopy
-from typing import Any, Optional
+from typing import Any
 
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models.llm_request import LlmRequest
 from google.adk.models.llm_response import LlmResponse
 from google.adk.tools import ToolContext
 from google.adk.tools.base_tool import BaseTool
+from google.api_core.exceptions import GoogleAPICallError
 from google.genai import types
 
-from app import config, ids
+from app import armor, config, ids
 
 logger = logging.getLogger("p2p.audit")
 if not logger.handlers:
@@ -37,7 +38,6 @@ def _log(**fields: Any) -> None:
     logger.info(json.dumps(fields, default=str))
 
 
-
 def block_obvious_injection(
     callback_context: CallbackContext,
     llm_request: LlmRequest,
@@ -56,20 +56,41 @@ def block_obvious_injection(
                 pattern=pattern,
                 agent=callback_context.agent_name,
             )
-            return LlmResponse(
-                content=types.Content(
-                    role="model",
-                    parts=[
-                        types.Part(
-                            text=(
-                                "I can't follow instructions that try to change my "
-                                "rules. I'm happy to help with invoice questions."
-                            )
-                        )
-                    ],
+            return _refusal()
+    if armor.enabled():
+        try:
+            if armor.prompt_flagged(text):
+                _log(
+                    event="input_blocked",
+                    pattern="model_armor",
+                    agent=callback_context.agent_name,
                 )
+                return _refusal()
+        except GoogleAPICallError:
+            _log(
+                event="input_blocked",
+                pattern="screening_unavailable",
+                agent=callback_context.agent_name,
             )
+            return _refusal()
+
     return None
+
+
+def _refusal():
+    return LlmResponse(
+        content=types.Content(
+            role="model",
+            parts=[
+                types.Part(
+                    text=(
+                        "I can't follow instructions that try to change my "
+                        "rules. I'm happy to help with invoice questions."
+                    )
+                )
+            ],
+        )
+    )
 
 
 def validate_tool_args(
